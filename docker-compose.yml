@@ -1,0 +1,14 @@
+services:
+  api:
+    build: .
+    container_name: snow-agent
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - chroma_data:/data/chroma   
+    env_file:
+      - .env
+
+volumes:
+  chroma_data:

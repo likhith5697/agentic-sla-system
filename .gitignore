@@ -1,0 +1,113 @@
+# ----------------------
+# Python basics
+# ----------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+*.pyo
+
+# ----------------------
+# Virtual environments
+# ----------------------
+.env
+.venv
+env/
+venv/
+ENV/
+
+# ----------------------
+# Environment variables (IMPORTANT for GenAI)
+# ----------------------
+.env
+.env.*
+*.env
+
+# ----------------------
+# Jupyter / notebooks
+# ----------------------
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Optional: remove outputs (if using tools like nbstripout)
+# *.ipynb
+
+# ----------------------
+# Logs & debug
+# ----------------------
+*.log
+logs/
+
+# ----------------------
+# Build / packaging
+# ----------------------
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ----------------------
+# Model files / large artifacts
+# ----------------------
+models/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.onnx
+
+# ----------------------
+# Hugging Face / cache
+# ----------------------
+.cache/
+huggingface/
+hf_home/
+datasets/
+
+# ----------------------
+# Vector DB / embeddings (FAISS, Chroma, etc.)
+# ----------------------
+*.faiss
+*.index
+*.db
+chroma/
+chromadb/
+
+# ----------------------
+# API responses / temp data
+# ----------------------
+data/
+outputs/
+tmp/
+temp/
+
+# ----------------------
+# IDE / editors
+# ----------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ----------------------
+# OS files
+# ----------------------
+.DS_Store
+Thumbs.db
+
+# ----------------------
+# Testing / coverage
+# ----------------------
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ----------------------
+# Secrets (extra safety)
+# ----------------------
+secrets.json
+config.yaml
+config.yml
