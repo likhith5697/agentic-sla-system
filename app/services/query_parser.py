@@ -15,7 +15,7 @@ def clean_json(raw: str):
 
 def parse_live_query(question: str):
     prompt = f"""
-Convert the user question into a structured JSON query.
+Convert the user question into structured JSON.
 
 Return ONLY JSON.
 
@@ -23,17 +23,20 @@ Schema:
 {{
   "table": "incident",
   "filters": {{
+    "number": "INC0000000",
     "priority": "1",
     "active": true,
     "breached": true
   }},
-  "aggregation": "count"
+  "aggregation": "count | list | single"
 }}
 
 Rules:
-- P1 = priority 1
-- breached = SLA breached
-- how many = count
+- If question contains INC number → use "number"
+- If asking about specific incident → aggregation = "single"
+- "how many" → count
+- "list" → list
+- "who is assigned" → single
 
 Question:
 {question}

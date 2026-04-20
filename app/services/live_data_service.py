@@ -2,6 +2,9 @@ import os
 import requests
 from requests.auth import HTTPBasicAuth
 from app.services.query_parser import parse_live_query
+import re
+from collections import Counter
+
 
 SN_INSTANCE = os.getenv("SN_INSTANCE")
 SN_USER = os.getenv("SN_USER")
@@ -32,6 +35,9 @@ def build_query(filters: dict) -> str:
 
     if "priority" in filters and filters["priority"]:
         q.append(f"priority={filters['priority']}")
+    
+    if "number" in filters:
+        q.append(f"number={filters['number']}")
 
     # default active=true for dashboard/live questions unless explicitly set
     if "active" in filters:
@@ -78,17 +84,27 @@ def format_list_answer(question: str, incidents: list[dict], breached: bool) -> 
     return f"Found {len(incidents)} matching active incidents. Top records: {nums}."
 
 
+
+
 def answer_live_query(question: str):
     parsed = parse_live_query(question)
+
+    q_lower = question.lower()
+    is_grouping = "most" in q_lower or "top" in q_lower
 
     filters = parsed.get("filters", {})
     agg = parsed.get("aggregation", "list")
     requested_table = parsed.get("table", "incident")
 
-    # For now we support incident-led live answers.
-    # task_sla is used as supporting join data for breached queries.
     if requested_table not in ["incident", "task_sla"]:
         requested_table = "incident"
+
+    # 🔥 detect single-record queries
+    is_single = (
+        agg == "single"
+        or "number" in filters
+        or re.search(r"\bINC\d+\b", question, re.I)
+    )
 
     incident_query = build_query(filters)
 
@@ -99,7 +115,7 @@ def answer_live_query(question: str):
         50,
     )
 
-    # SLA join only when needed
+    # 🔥 SLA join
     if filters.get("breached"):
         slas = sn_get(
             "task_sla",
@@ -110,22 +126,81 @@ def answer_live_query(question: str):
 
         breached_ids = set()
         for s in slas:
-            task = s.get("task")
-            task_value = get_display(task)
+            task_value = get_display(s.get("task"))
             if task_value:
                 breached_ids.add(task_value)
 
         incidents = [i for i in incidents if i.get("number") in breached_ids]
 
-    cleaned_records = [clean_incident_record(i) for i in incidents[:10]]
+    # =========================================================
+    # 🔥 GROUPING MODE (FIXED POSITION)
+    # =========================================================
+    if is_grouping:
 
+        # detect grouping field
+        if "team" in q_lower or "group" in q_lower:
+            field = "assignment_group"
+            label = "teams"
+        else:
+            field = "assigned_to"
+            label = "users"
+
+        counter = Counter()
+
+        for i in incidents:
+            key = get_display(i.get(field)) or "Unassigned"
+            counter[key] += 1
+
+        top = counter.most_common(5)
+
+        answer_lines = [f"{k}: {v}" for k, v in top]
+
+        return {
+            "answer": f"Top {label} by incident count:\n" + "\n".join(answer_lines),
+            "records": []
+        }
+
+    # =========================================================
+    # 🔥 SINGLE RECORD MODE
+    # =========================================================
+    if is_single:
+
+        if not incidents:
+            return {"answer": "No record found", "records": []}
+
+        r = clean_incident_record(incidents[0])
+
+        if "status" in q_lower or "state" in q_lower:
+            answer = f"{r['number']} is currently {r['state']}."
+
+        elif "assign" in q_lower or "who" in q_lower:
+            answer = f"{r['number']} is assigned to {r['assigned_to']} (Group: {r['assignment_group']})."
+
+        elif "priority" in q_lower:
+            answer = f"{r['number']} has priority {r['priority']}."
+
+        else:
+            answer = (
+                f"{r['number']} is {r['state']} | "
+                f"Priority: {r['priority']} | "
+                f"Assigned to: {r['assigned_to']} (Group: {r['assignment_group']})"
+            )
+
+        return {"answer": answer, "records": [r]}
+
+    # =========================================================
+    # 🔥 COUNT MODE
+    # =========================================================
     if agg == "count":
         return {
             "answer": format_count_answer(question, incidents, filters.get("breached", False)),
-            "records": cleaned_records,
+            "records": [clean_incident_record(i) for i in incidents[:10]],
         }
 
+    # =========================================================
+    # 🔥 LIST MODE
+    # =========================================================
     return {
         "answer": format_list_answer(question, incidents, filters.get("breached", False)),
-        "records": cleaned_records,
+        "records": [clean_incident_record(i) for i in incidents[:10]],
     }

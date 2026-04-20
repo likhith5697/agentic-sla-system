@@ -15,6 +15,7 @@ LIVE_PATTERNS = [
     r"\bassigned\b",
     r"\bowner\b",
     r"\bwho is\b",
+    r"\bpriority\b",
 ]
 
 # 🔥 KNOWLEDGE (KB / SLA definitions)
@@ -33,11 +34,17 @@ def match_any(text, patterns):
     return any(re.search(p, text, re.IGNORECASE) for p in patterns)
 
 
-def classify_intent(question: str) -> str:
-    live = match_any(question, LIVE_PATTERNS)
-    knowledge = match_any(question, KNOWLEDGE_PATTERNS)
 
-    # 🔥 HYBRID (most important for enterprise queries)
+def classify_intent(question: str) -> str:
+    q = question.lower()
+
+    # 🔥 HARD OVERRIDE (MOST IMPORTANT FIX)
+    if re.search(r"\binc\d+\b", q, re.IGNORECASE):
+        return "live_table_query"
+
+    live = match_any(q, LIVE_PATTERNS)
+    knowledge = match_any(q, KNOWLEDGE_PATTERNS)
+
     if live and knowledge:
         return "hybrid_query"
 
