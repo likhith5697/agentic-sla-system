@@ -1,6 +1,6 @@
 import re
 
-# 🔥 LIVE (tables / metrics / real-time)
+#  LIVE (tables / metrics / real-time)
 LIVE_PATTERNS = [
     r"\bINC\d+\b",
     r"\bincident(s)?\b",
@@ -18,7 +18,7 @@ LIVE_PATTERNS = [
     r"\bpriority\b",
 ]
 
-# 🔥 KNOWLEDGE (KB / SLA definitions)
+#  KNOWLEDGE (KB / SLA definitions)
 KNOWLEDGE_PATTERNS = [
     r"\bwhat is\b",
     r"\bhow does\b",
@@ -38,7 +38,7 @@ def match_any(text, patterns):
 def classify_intent(question: str) -> str:
     q = question.lower()
 
-    # 🔥 HARD OVERRIDE (MOST IMPORTANT FIX)
+    #  HARD OVERRIDE (MOST IMPORTANT FIX)
     if re.search(r"\binc\d+\b", q, re.IGNORECASE):
         return "live_table_query"
 
